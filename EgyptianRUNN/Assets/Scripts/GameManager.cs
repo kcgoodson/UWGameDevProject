@@ -84,8 +84,6 @@ public class GameManager : MonoBehaviour {
 	
 	//Creates and Instates Player Objects
 	void SetupPlayers() {
-		if(playerCount < 3)
-			playerCount = 3;
 		players = new GameObject[playerCount];
 		for(int i = 0; i < players.Length; i++) {
 			GameObject nextPlayer = new GameObject();
@@ -155,5 +153,13 @@ public class GameManager : MonoBehaviour {
 		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, m.card.transform.position.y + tableau.Count * m.card.transform.lossyScale.y), Quaternion.identity);
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
 		m.gameObject.transform.Translate(new Vector2(0, m.card.transform.lossyScale.y));
+	}
+
+	//Gives the Stack and Burned Cards to the Passed player
+	public static void Collect(int playerID) {
+		currentPlayer = playerID;
+		int burnCount = burn.Count;
+		int stackCount = tableau.Count;
+
 	}
 }

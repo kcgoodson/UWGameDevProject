@@ -12,16 +12,18 @@ public class Player : MonoBehaviour {
 		this.playerName = playerName;
 		cards = new Queue();
 	}
-
+	
 	void Update() {
 		if(GameManager.CurrentPlayer() == id) {
 			Debug.Log (playerName);
-			if(Input.GetButtonDown("SWITCH" + id))
+			if(Input.GetButtonDown ("FLIP" + (id + 1))) {
+				DealCard();
 				GameManager.NextPlayer();
-			if(Input.GetKeyDown (KeyCode.Space)) {
-				int length = cards.Count;
-				for(int i = 0; i < length; i++) {
-					GameManager.StackCard(cards.Dequeue());
+			} else if (Input.GetButtonDown("SLAP" + (id + 1))) {
+				if(GameManager.SlapValid()) {
+					GameManager.Collect(id);
+				} else {
+					BurnCard();
 				}
 			}
 
@@ -34,11 +36,11 @@ public class Player : MonoBehaviour {
 	}
 
 	//Gives out a Card
-	public void DealCard() {
+	void DealCard() {
 		GameManager.StackCard(cards.Dequeue());
 	}
 
-	public void BurnCard() {
+	void BurnCard() {
 		GameManager.BurnCard(cards.Dequeue());
 	}
 }
