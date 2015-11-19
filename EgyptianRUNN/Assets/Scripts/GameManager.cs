@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour {
 	static Sprite[] cardSkins;
 	static GameManager m;
 	static GameObject[] players;
+    static string[] playerNames;
 	static int currentPlayer;
 
 	static Queue tableau;
@@ -22,21 +23,54 @@ public class GameManager : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		m = this;
-		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Queue();
 		slapCheck = new Card[3];
-		SetupSkins();
-		SetupPlayers();
-		DealCards(deck);
-
+        DontDestroyOnLoad(this);
 	}
 
 	void Update() {
-		if(currentPlayer >= players.Length)
-			currentPlayer = 0;
-		Debug.Log(SlapValid());
+        if (Application.loadedLevelName.Equals("MainGame")) {
+            if (players != null) {
+                if (currentPlayer >= players.Length)
+                    currentPlayer = 0;
+                //Debug.Log(SlapValid());
+            } else {
+                loadGame();
+            }
+        }
 	}
+
+    //Runs functions on the start of the game scene
+    public void loadGame() {
+        if (Application.loadedLevelName.Equals("MainGame")) {
+            Queue deck = Shuffle(InitialDeck(suits, ranks));
+            SetupSkins();
+            SetupPlayers();
+            DealCards(deck);
+            SetPlayerNameSpaces();
+        }
+    }
+
+    //Retrieves relevant information from the menu scene and loads the game scene
+    public void GetPlayerInfo() {
+        playerCount = int.Parse(GameObject.FindGameObjectWithTag("Activated").name.Substring(0, 1));
+        playerNames = new string[playerCount];
+        for(int i = 0; i < playerCount; i++) {
+            playerNames[i] = GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.InputField>().text;
+        }
+        Application.LoadLevel("MainGame");
+    }
+
+    //Sets the text of the player name ui texts to the names of the players
+    public void SetPlayerNameSpaces() {
+        for (int i = 0; i < playerCount; i++) {
+            GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.Text>().text = players[i].name;
+        }
+        for (int i = playerCount; i < 4; i++) {
+            GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.Text>().text = "";
+        }
+    }
 
 	//Sets up a new deck with the number of Suits each with number of Ranks
 	Queue InitialDeck(int suit, int rank) {
@@ -84,17 +118,14 @@ public class GameManager : MonoBehaviour {
 	
 	//Creates and Instates Player Objects
 	void SetupPlayers() {
-		if(playerCount < 3)
-			playerCount = 3;
 		players = new GameObject[playerCount];
 		for(int i = 0; i < players.Length; i++) {
 			GameObject nextPlayer = new GameObject();
 			nextPlayer.AddComponent<Player>();
 			nextPlayer.GetComponent<Player>().SetupPlayer("Player " + (i + 1), i);
-			nextPlayer.name = "Player: " + i;
+			nextPlayer.name = playerNames[i];
 			players[i] = nextPlayer;
 		}
-
 	}
 
 	//Deals the Cards to the Players
