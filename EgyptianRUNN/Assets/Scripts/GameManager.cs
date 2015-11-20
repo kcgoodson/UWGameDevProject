@@ -43,13 +43,10 @@ public class GameManager : MonoBehaviour {
 
     //Runs functions on the start of the game scene
     public void loadGame() {
-        if (Application.loadedLevelName.Equals("MainGame")) {
-            Queue deck = Shuffle(InitialDeck(suits, ranks));
-            SetupSkins();
-            SetupPlayers();
-            DealCards(deck);
-            SetPlayerNameSpaces();
-        }
+        Queue deck = Shuffle(InitialDeck(suits, ranks));
+        SetupSkins();
+        SetupPlayers();
+        DealCards(deck);
     }
 
     //Retrieves relevant information from the menu scene and loads the game scene
@@ -60,16 +57,6 @@ public class GameManager : MonoBehaviour {
             playerNames[i] = GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.InputField>().text;
         }
         Application.LoadLevel("MainGame");
-    }
-
-    //Sets the text of the player name ui texts to the names of the players
-    public void SetPlayerNameSpaces() {
-        for (int i = 0; i < playerCount; i++) {
-            GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.Text>().text = players[i].name;
-        }
-        for (int i = playerCount; i < 4; i++) {
-            GameObject.Find("Player " + (i + 1) + " Name").GetComponent<UnityEngine.UI.Text>().text = "";
-        }
     }
 
 	//Sets up a new deck with the number of Suits each with number of Ranks
