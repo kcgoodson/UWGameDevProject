@@ -4,11 +4,13 @@ using System.Collections;
 public class Player : MonoBehaviour {
 	
 	int id;
+	string label;
 	Queue cards;
 	bool alive;
 
-	public void SetupPlayer(int id) {
+	public void SetupPlayer(int id, string label) {
 		this.id = id;
+		this.label = label;
 		alive = true;
 		cards = new Queue();
 	}
@@ -17,20 +19,30 @@ public class Player : MonoBehaviour {
 		if(GameManager.CurrentPlayerID() == id) {
 			if(!HasCards())
 				GameManager.NextPlayer();
-			if(Input.GetButtonDown ("FLIP" + (id + 1))) {
+			if(Input.GetButtonDown("FLIP" + (id + 1)) && !GameManager.isRoyalCollecting()) {
+				Card next = (Card) cards.Peek();
 				DealCard();
-				GameManager.NextPlayer();
+				if(!GameManager.HasRoyalPlayer() || next.isRoyal()) {
+					GameManager.NextPlayer();
+				} else {
+					GameManager.DecreaseRoyalCount();
+				}
 			}
 		}
 		if(isAlive() && !GameManager.GameOver() && Input.GetButtonDown("SLAP" + (id + 1))) {
 			if(GameManager.SlapValid()) {
 				GameManager.Collect(id);
-			} else if(HasCards()){
+			} else if(HasCards() && !GameManager.isCollecting()){
 				BurnCard();
 			} else {
 				Lose();
 			}
 		}
+	}
+
+	//Returns Player Label
+	public string Label() {
+		return label;
 	}
 	
 	//Recieves a Card
