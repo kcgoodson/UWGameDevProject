@@ -29,10 +29,10 @@ public class Player : MonoBehaviour {
 				}
 			}
 		}
-		if(isAlive() && !GameManager.GameOver() && Input.GetButtonDown("SLAP" + (id + 1))) {
+		if(isAlive() && !GameManager.GameOver() && !GameManager.isCollecting() && Input.GetButtonDown("SLAP" + (id + 1))) {
 			if(GameManager.SlapValid()) {
 				GameManager.Collect(id);
-			} else if(HasCards() && !GameManager.isCollecting()){
+			} else if(HasCards()){
 				BurnCard();
 			} else {
 				Lose();

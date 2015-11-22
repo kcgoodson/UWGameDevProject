@@ -9,11 +9,16 @@ public class GameManager : MonoBehaviour {
 	public int ranks; //Default 13
 	public string[] playerNames; //2 - 4
 	public int royalRank; //Default 8
-	public GameObject card;
-	public GameObject playerObject;
+	public GameObject card; //Card Object
+	public GameObject playerObject; //Player Objects
+	public string[] playerTypes;//Define Selectable Characters
+	public Color[] playerColors; //Define Corresponding Colors
+	public float fadeSpeed; // For Cards Disappearing
 
 	static Sprite[] cardSkins;
 	static Dictionary<string, Sprite> faces;
+	static Dictionary<string, Color> colors;
+
 	static GameManager m;
 	static GameObject[] players;
 	static int currentPlayer;
@@ -35,6 +40,13 @@ public class GameManager : MonoBehaviour {
 	static Vector3 startPos;
 	static Vector3 targetPos;
 	public int stackHeightSize;
+
+	public float inactiveFade;
+	public float weakFadeMin;
+	public float weakFadeSpeed;
+
+	static float weakFade = 0.3f;
+	static bool weakUp = false;
 
 	void Start() {
 		LoadGame(playerNames);
@@ -62,9 +74,12 @@ public class GameManager : MonoBehaviour {
 		LabelPlayers();
 		CheckEndGame();
 		transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 10);
+		WeakFadeUpdate();
 		if(royalCount == 0)
 			m.StartCoroutine(CollectRoyal());
 	}
+
+
 
 	//Sets up a new deck with the number of Suits each with number of Ranks
 	Queue InitialDeck(int suit, int rank) {
@@ -111,6 +126,9 @@ public class GameManager : MonoBehaviour {
 			Sprite nextPic = (Sprite) facepics[i];
 			faces.Add(nextPic.name, nextPic);
 		}
+		colors = new Dictionary<string, Color>();
+		for(int i = 0; i < m.playerColors.Length; i++)
+			colors.Add(m.playerTypes[i], m.playerColors[i]);
 	}
 
 	//Returns the Card Texture
@@ -222,8 +240,8 @@ public class GameManager : MonoBehaviour {
 
 	//Instatiates the Card in the Scene
 	public static void CreateCard(Card next) {
-		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y; // m.card.transform.lossyScale.y
-		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * height), Quaternion.identity);
+		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * .965f;
+		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * (height)), Quaternion.identity);
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
 		targetPos = (new Vector2(0, stackHeight() * height + startPos.y));
 	}
@@ -253,6 +271,11 @@ public class GameManager : MonoBehaviour {
 
 	//Gives the Stack and Burned Cards to the Passed player
 	public static void Collect(int playerID) {
+		m.StartCoroutine(CollectProcess(playerID));
+	}
+
+	//Collect IEnumerator
+	static IEnumerator CollectProcess(int playerID) {
 		collecting = true;
 		ClearRound();
 		int burnCount = burn.Count;
@@ -272,8 +295,18 @@ public class GameManager : MonoBehaviour {
 				PlayerAt(i).Lose();
 		}
 		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
-		foreach(GameObject o in allCards)
+		Color winColor = colors[PlayerAt(playerID).Label()];
+		winColor.a = 1;
+		while(winColor.a > 0) {
+			winColor.a -= Time.deltaTime * m.fadeSpeed;
+			foreach(GameObject o in allCards) {
+				o.GetComponent<SpriteRenderer>().color = winColor;
+			}
+			yield return null;
+		}
+		foreach(GameObject o in allCards) {
 			Destroy(o);
+		}
 		currentPlayer = playerID;
 		collecting = false;
 	}
@@ -293,10 +326,12 @@ public class GameManager : MonoBehaviour {
 
 	//Checks if the Game is Ended
 	static void CheckEndGame() {
-		if(PlayerHasWon() != -1)
-			Win(PlayerHasWon());
-		else if(!PlayersHaveCards() && !SlapValid() && !royalCollecting)
-			Tie();
+		if(!collecting) {
+			if(PlayerHasWon() != -1)
+				Win(PlayerHasWon());
+			else if(!PlayersHaveCards() && !SlapValid() && !royalCollecting)
+				Tie();
+		}
 	}
 
 	//Signals a Tie Game
@@ -357,23 +392,42 @@ public class GameManager : MonoBehaviour {
 	//UI Player Image
 	static void ImageLabel(int i) {
 		Player current = PlayerAt(i);
+		Image image = current.GetComponent<Image>();
+		Color color = image.color;
+		color.a = m.inactiveFade;
 		string key = current.Label();
-		if(!current.isAlive())
+		if(!current.isAlive()) {
 			key += "Dead";
-		else if(!current.HasCards())
-			key += "Weak";
-		current.GetComponent<Image>().sprite = faces[key];
-	}                            
+			color = new Color(color.r, color.g, color.b, 0.3f);
+		} else if(!current.HasCards()) {
+			color = new Color(color.r, color.g, color.b, weakFade);
+		} else if(i == currentPlayer || i == PlayerHasWon()) {
+			color = new Color(color.r, color.g, color.b, 1);
+		}
+		image.sprite = faces[key];
+		image.color = color;
+	}            
+
+	static void WeakFadeUpdate() {
+		if(weakFade >= m.inactiveFade) {
+			weakUp = false;
+			weakFade = m.inactiveFade;
+		}
+		else if(weakFade <= m.weakFadeMin) {
+			weakUp = true;
+			weakFade = m.weakFadeMin;
+		}
+		if(weakUp)
+			weakFade += Time.deltaTime * m.weakFadeSpeed;
+		else
+			weakFade -= Time.deltaTime * m.weakFadeSpeed;
+	}
 
 	//UI Player Text
 	static void TextLabel(int i) {
 		string text = "";
-		if(currentPlayer == i && PlayerAt(i).HasCards() && PlayerAt(i).isAlive())
-			text += "*";
 		if(PlayerAt(i).isAlive())
 			text += " Cards: " + PlayerAt(i).CardCount();
-		else
-			text += " X_X";
 		Text t = (Text) PlayerAt(i).gameObject.GetComponentInChildren(typeof(Text));
 		t.text = text;
 	}
