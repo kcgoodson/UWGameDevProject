@@ -1,59 +1,99 @@
 ﻿using UnityEngine;
+using UnityEngine.UI;
 using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
 
-	public int suits;
-	public int ranks;
-	public int playerCount;
-	public GameObject card;
-    public static GameManager instance;
+	public int suits; //Default 4
+	public int ranks; //Default 13
+	public string[] playerNames; //2 - 4
+	public int royalRank; //Default 8
+	public GameObject card; //Card Object
+	public GameObject playerObject; //Player Objects
+	public string[] playerTypes;//Define Selectable Characters
+	public Color[] playerColors; //Define Corresponding Colors
+	public float fadeSpeed; // For Cards Disappearing
 
 	static Sprite[] cardSkins;
+	static Dictionary<string, Sprite> faces;
+	static Dictionary<string, Color> colors;
+
 	static GameManager m;
 	static GameObject[] players;
 	static int currentPlayer;
 
 	static Queue tableau;
-	static Queue burn;
+	static Stack burn;
+	static Queue royalBurn;
 	static Card[] slapCheck;
 
+	static bool gameOver;
+	static bool collecting;
+	static bool royalCollecting;
+
+	static int royalPlayer;
+	static int royalCount;
+
+	public float breathTime;
+
+	static Vector3 startPos;
+	static Vector3 targetPos;
+	public int stackHeightSize;
+
+	public float inactiveFade;
+	public float weakFadeMin;
+	public float weakFadeSpeed;
+
+	static float weakFade = 0.3f;
+	static bool weakUp = false;
+
+	void Start() {
+		LoadGame(playerNames);
+	}
 
 	// Use this for initialization
-	void Start () {
+	void LoadGame (string[] playerLabels) {
+		this.playerNames = playerLabels;
 		m = this;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
-		burn = new Queue();
-		slapCheck = new Card[3];
+		burn = new Stack();
+		royalBurn = new Queue();
 		SetupSkins();
 		SetupPlayers();
+		SetupFaces();
 		DealCards(deck);
-
+		startPos = transform.position;
+		ClearRound();
+		currentPlayer = (int) Random.Range(0, playerNames.Length);
+		gameOver = false;
 	}
 
 	void Update() {
-		if(currentPlayer >= players.Length)
-			currentPlayer = 0;
-		Debug.Log(SlapValid());
+		LabelPlayers();
+		CheckEndGame();
+		transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 10);
+		WeakFadeUpdate();
+		if(royalCount == 0)
+			m.StartCoroutine(CollectRoyal());
 	}
+
+
 
 	//Sets up a new deck with the number of Suits each with number of Ranks
 	Queue InitialDeck(int suit, int rank) {
 		Queue deck = new Queue();
 		for(int i = 0; i < suit; i++) {
 			for(int j = 0; j < rank; j++) {
-				deck.Enqueue(new Card(i, j));
+				if(j > royalRank)
+					deck.Enqueue(new Card(i, j, j - royalRank));
+				else
+					deck.Enqueue(new Card(i, j));
 			}
 		}
 		return deck;
 	}
-
-    public void LoadGame()
-    {
-
-    }
 
 	//Randomizes the passed Queue
 	public static Queue Shuffle(Queue deck) {
@@ -78,6 +118,18 @@ public class GameManager : MonoBehaviour {
 		}
 	}
 
+	//Sets up PlayerUI images
+	static void SetupFaces() {
+		faces = new Dictionary<string, Sprite>();
+		object[] facepics = Resources.LoadAll("PlayerUI", typeof(Sprite));
+		for(int i = 0; i < facepics.Length; i++) {
+			Sprite nextPic = (Sprite) facepics[i];
+			faces.Add(nextPic.name, nextPic);
+		}
+		colors = new Dictionary<string, Color>();
+		for(int i = 0; i < m.playerColors.Length; i++)
+			colors.Add(m.playerTypes[i], m.playerColors[i]);
+	}
 
 	//Returns the Card Texture
 	public static Sprite CardSkin(Card next) {
@@ -90,15 +142,18 @@ public class GameManager : MonoBehaviour {
 	
 	//Creates and Instates Player Objects
 	void SetupPlayers() {
-		if(playerCount < 3)
-			playerCount = 3;
-		players = new GameObject[playerCount];
+		players = new GameObject[playerNames.Length];
 		for(int i = 0; i < players.Length; i++) {
-			GameObject nextPlayer = new GameObject();
-			nextPlayer.AddComponent<Player>();
-			nextPlayer.GetComponent<Player>().SetupPlayer("Player " + (i + 1), i);
+			GameObject nextPlayer = Instantiate(playerObject);
+			nextPlayer.GetComponent<Player>().SetupPlayer(i, playerNames[i]);
 			nextPlayer.name = "Player: " + i;
+			RectTransform rectTrans = nextPlayer.GetComponent<RectTransform>();
+			rectTrans.position = new Vector2((Screen.width - rectTrans.rect.width) * (i % 2), ((Screen.height - rectTrans.rect.height) * ((3 - i) / 2)));
 			players[i] = nextPlayer;
+		}
+		GameObject canvas = GameObject.FindGameObjectWithTag("Canvas");
+		foreach(GameObject p in players) {
+			p.transform.SetParent(canvas.transform);
 		}
 
 	}
@@ -106,37 +161,72 @@ public class GameManager : MonoBehaviour {
 	//Deals the Cards to the Players
 	static void DealCards(Queue deck) {
 		int deckLength = deck.Count;
-		for(int i = 0; i < deckLength; i++) {
+		for(int i = 0; i < deckLength - deckLength%players.Length; i++) {
 			players[(i%players.Length)].GetComponent<Player>().GetCard((Card) deck.Dequeue());
 		}
+		deckLength = deck.Count;
+		for(int i = 0; i < deckLength; i++)
+			BurnCard((Card) deck.Dequeue());
 	}
 
 	//Returns the Current Player ID
-	public static int CurrentPlayer() {
+	public static int CurrentPlayerID() {
 		return currentPlayer;
 	}
-	
+
 	//Sets the next player to be the current player
 	public static void NextPlayer() {
+		if(!PlayersHaveCards()) {
+			currentPlayer = -1;
+			return;
+		}
 		int tempNext = currentPlayer + 1;
-		if(tempNext > players.Length)
+		if(tempNext >= players.Length)
 			tempNext = 0;
 		currentPlayer = tempNext;
+
 	}
 
 	//Adds a card to the Tableau
-	public static void StackCard(object next) {
+	public static void StackCard(object next, int id) {
 		tableau.Enqueue(next);
-		SlapCycle((Card) next);
-		CreateCard((Card) next);
+		Card c = (Card) next;
+		SlapCycle(c);
+		CreateCard(c);
+		if(c.isRoyal()) {
+			royalPlayer = id;
+			royalCount = c.RoyalValue();
+		}
+
 	}
 
 	//Adds a card to the Burn Pile
 	public static void BurnCard(object next) {
-		burn.Enqueue(next);
+		AudioManager.playSound("burn");
+		if(royalCollecting)
+			royalBurn.Enqueue(next);
+		else
+			burn.Push(next);
 	}
 
-	//Updates the 
+	//Returns the Current Player object
+	public static Player CurrentPlayer() {
+		if(currentPlayer < players.Length && currentPlayer >= 0)
+			return players[currentPlayer].GetComponent<Player>();
+		return null;
+	}
+
+	//Retuns Indexed Player Object
+	static Player PlayerAt(int i) {
+		return players[i].GetComponent<Player>();
+	}
+
+	//Gives the card to the specified player
+	static void GiveCard(int playerID, object nextCard) {
+		players[playerID].GetComponent<Player>().GetCard((Card)nextCard);
+	}
+
+	//Updates the Valid Slap Stack
 	static void SlapCycle(Card next) {
 		slapCheck[2] = slapCheck[1];
 		slapCheck[1] = slapCheck[0];
@@ -145,21 +235,235 @@ public class GameManager : MonoBehaviour {
 
 	//Returns True if a Double or a Sandvich
 	public static bool SlapValid() {
-		HashSet<int> temp = new HashSet<int>();
-		foreach(Card c in slapCheck) {
-			if(c == null)
-				return false;
-			if(temp.Contains(c.Rank()))
-			   return true;
-			temp.Add(c.Rank());
-		}
-		return false;
+		return (slapCheck[0].Rank() == slapCheck[1].Rank() ||
+		        slapCheck[0].Rank() == slapCheck[2].Rank());
 	}
 
 	//Instatiates the Card in the Scene
 	public static void CreateCard(Card next) {
-		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, m.card.transform.position.y + tableau.Count * m.card.transform.lossyScale.y), Quaternion.identity);
+		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * .965f;
+		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * (height)), Quaternion.identity);
+		AudioManager.playSound("deal");
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
-		m.gameObject.transform.Translate(new Vector2(0, m.card.transform.lossyScale.y));
+		targetPos = (new Vector2(0, stackHeight() * height + startPos.y));
+	}
+
+	static int stackHeight() {
+		int height = tableau.Count - m.stackHeightSize;
+		if(height < 0)
+			return 0;
+		return height;
+	}
+
+	//Gives the Stack and Burned Cards to the Royal Player after a period of time
+	static IEnumerator CollectRoyal() {
+		royalCollecting = true;
+		royalCount = -1;
+		yield return new WaitForSeconds(m.breathTime);
+		if(HasRoyalPlayer()) {
+			if(!PlayerAt(royalPlayer).isAlive())
+				Distribute();
+			else
+				Collect(royalPlayer);
+		}
+		while(collecting)
+			yield return null;
+		royalCollecting = false;
+	}
+
+	//Gives the Stack and Burned Cards to the Passed player
+	public static void Collect(int playerID) {
+		m.StartCoroutine(CollectProcess(playerID));
+	}
+
+	//Collect IEnumerator
+	static IEnumerator CollectProcess(int playerID) {
+		collecting = true;
+		ClearRound();
+		int burnCount = burn.Count;
+		int stackCount = tableau.Count;
+		int royalBurnCount = royalBurn.Count;
+		for(int i = 0; i < burnCount; i++) {
+			GiveCard(playerID, burn.Pop());
+		}
+		for(int i = 0; i < stackCount; i++) {
+			GiveCard(playerID, tableau.Dequeue());
+		}
+		for(int i = 0; i < royalBurnCount; i++) {
+			burn.Push(royalBurn.Dequeue());
+		}
+		for(int i = 0; i < players.Length; i++) {
+			if(!PlayerAt(i).HasCards())
+				PlayerAt(i).Lose();
+		}
+		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
+		Color winColor = colors[PlayerAt(playerID).Label()];
+		winColor.a = 1;
+		AudioManager.playSound("collect");
+		while(winColor.a > 0) {
+			winColor.a -= Time.deltaTime * m.fadeSpeed;
+			foreach(GameObject o in allCards) {
+				o.GetComponent<SpriteRenderer>().color = winColor;
+			}
+			yield return null;
+		}
+		foreach(GameObject o in allCards) {
+			Destroy(o);
+		}
+		currentPlayer = playerID;
+		collecting = false;
+	}
+
+	//Clears information for the next round
+	static void ClearRound() {
+		currentPlayer = -1;
+		royalPlayer = -1;
+		royalCount = -1;
+		slapCheck = new Card[] {new Card(-1, -1), new Card(-1, -2), new Card(-1, -3)};
+		targetPos = startPos;
+	}
+
+	//Deals All Stack and Burn cards to Alive Players
+	static void Distribute() {
+	}
+
+	//Checks if the Game is Ended
+	static void CheckEndGame() {
+		if(!collecting && !gameOver) {
+			if(PlayerHasWon() != -1)
+				Win(PlayerHasWon());
+			else if(!PlayersHaveCards() && !SlapValid() && !royalCollecting)
+				Tie();
+		}
+	}
+
+	//Signals a Tie Game
+	static void Tie() {
+		currentPlayer = -1;
+		gameOver = true;
+		AudioManager.playSound("tie");
+		Debug.Log("Tie");
+	}
+
+	//Signals a Win for a Player
+	static void Win(int playerID) {
+		m.StartCoroutine(WinProcess(playerID));
+	}
+
+	static IEnumerator WinProcess(int ID) {
+		currentPlayer = -1;
+		gameOver = true;
+		yield return new WaitForSeconds(1);
+		AudioManager.playSound("win");
+		Debug.Log ("WINNER! : " + ID);
+	}
+
+	//Returns true if at least on player has cards
+	static bool PlayersHaveCards() {
+		for(int i = 0; i < players.Length; i++) {
+			if(PlayerAt(i).HasCards())
+				return true;
+		}
+		return false;
+	}
+
+	//Returns the Last Player Standing. Otherwise returns -1;
+	static int PlayerHasWon() {
+		bool win = false;
+		int winPlayer = -1;
+		for(int i = 0; i < players.Length; i++) {
+			if(PlayerAt(i).isAlive()) {
+				if(!win) {
+					win = true;
+					winPlayer = i;
+				} else {
+					return -1;
+				}
+			}
+		}
+		return winPlayer;
+	}
+
+	public static int[] PlayerSummary() {
+		int[] count = new int[players.Length];
+		for(int i = 0; i< count.Length; i++)
+			count[i] = PlayerAt(i).CardCount();
+		return count;
+	}
+
+	//Displays the UI Labels for the Players
+	static void LabelPlayers() {
+		for(int i = 0; i < players.Length; i++) {
+			ImageLabel(i);
+			TextLabel(i);
+		}
+	}
+
+	//UI Player Image
+	static void ImageLabel(int i) {
+		Player current = PlayerAt(i);
+		Image image = current.GetComponent<Image>();
+		Color color = image.color;
+		color.a = m.inactiveFade;
+		string key = current.Label();
+		if(!current.isAlive()) {
+			key += "Dead";
+			color = new Color(color.r, color.g, color.b, 0.3f);
+		} else if(!current.HasCards()) {
+			color = new Color(color.r, color.g, color.b, weakFade);
+		} else if(i == currentPlayer || i == PlayerHasWon()) {
+			color = new Color(color.r, color.g, color.b, 1);
+		}
+		image.sprite = faces[key];
+		image.color = color;
+	}            
+
+	static void WeakFadeUpdate() {
+		if(weakFade >= m.inactiveFade) {
+			weakUp = false;
+			weakFade = m.inactiveFade;
+		}
+		else if(weakFade <= m.weakFadeMin) {
+			weakUp = true;
+			weakFade = m.weakFadeMin;
+		}
+		if(weakUp)
+			weakFade += Time.deltaTime * m.weakFadeSpeed;
+		else
+			weakFade -= Time.deltaTime * m.weakFadeSpeed;
+	}
+
+	//UI Player Text
+	static void TextLabel(int i) {
+		string text = "";
+		if(PlayerAt(i).isAlive())
+			text += " Cards: " + PlayerAt(i).CardCount();
+		Text t = (Text) PlayerAt(i).gameObject.GetComponentInChildren(typeof(Text));
+		t.text = text;
+	}
+
+	//Returns if the Game is Over
+	public static bool GameOver() {
+		return gameOver;
+	}
+
+	//Returns if there is a current Royal Player
+	public static bool HasRoyalPlayer() {
+		return royalPlayer != -1;
+	}
+
+	//Decreases the royal count quota
+	public static void DecreaseRoyalCount() {
+		royalCount = royalCount - 1;
+	}
+
+	//Returns true if in collecting phase
+	public static bool isCollecting() {
+		return collecting;
+	}
+
+	//Returns true if waithing for royal collecting
+	public static bool isRoyalCollecting() {
+		return royalCollecting;
 	}
 }
