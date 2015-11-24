@@ -202,6 +202,7 @@ public class GameManager : MonoBehaviour {
 
 	//Adds a card to the Burn Pile
 	public static void BurnCard(object next) {
+		AudioManager.playSound("burn");
 		if(royalCollecting)
 			royalBurn.Enqueue(next);
 		else
@@ -242,6 +243,7 @@ public class GameManager : MonoBehaviour {
 	public static void CreateCard(Card next) {
 		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * .965f;
 		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * (height)), Quaternion.identity);
+		AudioManager.playSound("deal");
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
 		targetPos = (new Vector2(0, stackHeight() * height + startPos.y));
 	}
@@ -297,6 +299,7 @@ public class GameManager : MonoBehaviour {
 		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
 		Color winColor = colors[PlayerAt(playerID).Label()];
 		winColor.a = 1;
+		AudioManager.playSound("collect");
 		while(winColor.a > 0) {
 			winColor.a -= Time.deltaTime * m.fadeSpeed;
 			foreach(GameObject o in allCards) {
@@ -326,7 +329,7 @@ public class GameManager : MonoBehaviour {
 
 	//Checks if the Game is Ended
 	static void CheckEndGame() {
-		if(!collecting) {
+		if(!collecting && !gameOver) {
 			if(PlayerHasWon() != -1)
 				Win(PlayerHasWon());
 			else if(!PlayersHaveCards() && !SlapValid() && !royalCollecting)
@@ -338,14 +341,21 @@ public class GameManager : MonoBehaviour {
 	static void Tie() {
 		currentPlayer = -1;
 		gameOver = true;
+		AudioManager.playSound("tie");
 		Debug.Log("Tie");
 	}
 
 	//Signals a Win for a Player
 	static void Win(int playerID) {
+		m.StartCoroutine(WinProcess(playerID));
+	}
+
+	static IEnumerator WinProcess(int ID) {
 		currentPlayer = -1;
 		gameOver = true;
-		Debug.Log ("WINNER! : " + playerID);
+		yield return new WaitForSeconds(1);
+		AudioManager.playSound("win");
+		Debug.Log ("WINNER! : " + ID);
 	}
 
 	//Returns true if at least on player has cards

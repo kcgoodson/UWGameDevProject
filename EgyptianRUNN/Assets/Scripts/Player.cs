@@ -73,6 +73,7 @@ public class Player : MonoBehaviour {
 
 	public void Lose() {
 		alive = false;
+		AudioManager.playSound("lose");
 	}
 
 	public bool isAlive() {

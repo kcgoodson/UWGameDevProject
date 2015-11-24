@@ -25,6 +25,7 @@ public class AudioManager : MonoBehaviour {
 	}
 
 	public static void playSound(string name) {
+
 		source.PlayOneShot(sfx[name]);
 	}
 
