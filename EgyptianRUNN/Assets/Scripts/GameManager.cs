@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour {
 	public int ranks;
 	public int playerCount;
 	public GameObject card;
+    public static GameManager instance;
 
 	static Sprite[] cardSkins;
 	static GameManager m;
@@ -48,6 +49,11 @@ public class GameManager : MonoBehaviour {
 		}
 		return deck;
 	}
+
+    public void LoadGame()
+    {
+
+    }
 
 	//Randomizes the passed Queue
 	public static Queue Shuffle(Queue deck) {
