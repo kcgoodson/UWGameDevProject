@@ -19,7 +19,7 @@ public class Player : MonoBehaviour {
 		if(GameManager.CurrentPlayerID() == id) {
 			if(!HasCards())
 				GameManager.NextPlayer();
-			if(Input.GetButtonDown("FLIP" + (id + 1)) && !GameManager.isRoyalCollecting()) {
+			if(Input.GetButtonDown("FLIP" + (id + 1)) && !GameManager.isRoyalCollecting() && !GameManager.GameOver()) {
 				Card next = (Card) cards.Peek();
 				DealCard();
 				if(!GameManager.HasRoyalPlayer() || next.isRoyal()) {
@@ -34,7 +34,7 @@ public class Player : MonoBehaviour {
 				GameManager.Collect(id);
 			} else if(HasCards()){
 				BurnCard();
-			} else {
+			} else{
 				Lose();
 			}
 		}

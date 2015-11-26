@@ -48,21 +48,27 @@ public class GameManager : MonoBehaviour {
 	static float weakFade = 0.3f;
 	static bool weakUp = false;
 
+	public float playerImageSize;
+	public Vector2 barSize;
+	public float[] barLocInfo;
+	static Texture2D staticRectTexture;
+
 	void Start() {
 		LoadGame(playerNames);
 	}
 
 	// Use this for initialization
-	void LoadGame (string[] playerLabels) {
+	public void LoadGame (string[] playerLabels) {
 		this.playerNames = playerLabels;
+		staticRectTexture = new Texture2D( 1, 1 );
 		m = this;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Stack();
 		royalBurn = new Queue();
 		SetupSkins();
-		SetupPlayers();
 		SetupFaces();
+		SetupPlayers();
 		DealCards(deck);
 		startPos = transform.position;
 		ClearRound();
@@ -70,16 +76,18 @@ public class GameManager : MonoBehaviour {
 		gameOver = false;
 	}
 
-	void Update() {
+	void OnGUI() {
+		GUI.skin.box = new GUIStyle();
 		LabelPlayers();
+	}
+
+	void Update() {
 		CheckEndGame();
 		transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 10);
 		WeakFadeUpdate();
 		if(royalCount == 0)
 			m.StartCoroutine(CollectRoyal());
 	}
-
-
 
 	//Sets up a new deck with the number of Suits each with number of Ranks
 	Queue InitialDeck(int suit, int rank) {
@@ -127,8 +135,11 @@ public class GameManager : MonoBehaviour {
 			faces.Add(nextPic.name, nextPic);
 		}
 		colors = new Dictionary<string, Color>();
-		for(int i = 0; i < m.playerColors.Length; i++)
-			colors.Add(m.playerTypes[i], m.playerColors[i]);
+		for(int i = 0; i < m.playerColors.Length; i++) {
+			Color pColor = m.playerColors[i];
+			pColor.a = 1;
+			colors.Add(m.playerTypes[i], pColor);
+		}
 	}
 
 	//Returns the Card Texture
@@ -147,8 +158,6 @@ public class GameManager : MonoBehaviour {
 			GameObject nextPlayer = Instantiate(playerObject);
 			nextPlayer.GetComponent<Player>().SetupPlayer(i, playerNames[i]);
 			nextPlayer.name = "Player: " + i;
-			RectTransform rectTrans = nextPlayer.GetComponent<RectTransform>();
-			rectTrans.position = new Vector2((Screen.width - rectTrans.rect.width) * (i % 2), ((Screen.height - rectTrans.rect.height) * ((3 - i) / 2)));
 			players[i] = nextPlayer;
 		}
 		GameObject canvas = GameObject.FindGameObjectWithTag("Canvas");
@@ -293,7 +302,8 @@ public class GameManager : MonoBehaviour {
 			burn.Push(royalBurn.Dequeue());
 		}
 		for(int i = 0; i < players.Length; i++) {
-			if(!PlayerAt(i).HasCards())
+			Player n = PlayerAt(i);
+			if(!n.HasCards() && n.isAlive())
 				PlayerAt(i).Lose();
 		}
 		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
@@ -332,7 +342,7 @@ public class GameManager : MonoBehaviour {
 		if(!collecting && !gameOver) {
 			if(PlayerHasWon() != -1)
 				Win(PlayerHasWon());
-			else if(!PlayersHaveCards() && !SlapValid() && !royalCollecting)
+			else if(!PlayersHaveCards() && !SlapValid() && !isRoyalCollecting() && royalCount != 0)
 				Tie();
 		}
 	}
@@ -359,7 +369,7 @@ public class GameManager : MonoBehaviour {
 	}
 
 	//Returns true if at least on player has cards
-	static bool PlayersHaveCards() {
+	public static bool PlayersHaveCards() {
 		for(int i = 0; i < players.Length; i++) {
 			if(PlayerAt(i).HasCards())
 				return true;
@@ -395,7 +405,7 @@ public class GameManager : MonoBehaviour {
 	static void LabelPlayers() {
 		for(int i = 0; i < players.Length; i++) {
 			ImageLabel(i);
-			TextLabel(i);
+			//TextLabel(i);
 		}
 	}
 
@@ -403,20 +413,47 @@ public class GameManager : MonoBehaviour {
 	static void ImageLabel(int i) {
 		Player current = PlayerAt(i);
 		Image image = current.GetComponent<Image>();
-		Color color = image.color;
-		color.a = m.inactiveFade;
+		RectTransform rectTrans = current.GetComponent<RectTransform>();
+		rectTrans.sizeDelta = GUIHelper(m.playerImageSize, m.playerImageSize);
+		rectTrans.position = new Vector2((Screen.width - rectTrans.rect.width) * (i % 2), ((Screen.height - rectTrans.rect.height) * ((3 - i) / 2)));
 		string key = current.Label();
+		Color color = colors[key];
+		color.a = m.inactiveFade;
 		if(!current.isAlive()) {
-			key += "Dead";
-			color = new Color(color.r, color.g, color.b, 0.3f);
+			color = colors["Dead"];
+			color.a = 0.3f;
 		} else if(!current.HasCards()) {
-			color = new Color(color.r, color.g, color.b, weakFade);
+			//color = new Color(color.r, color.g, color.b, weakFade);
+			color.a = weakFade;
 		} else if(i == currentPlayer || i == PlayerHasWon()) {
-			color = new Color(color.r, color.g, color.b, 1);
+			//color = new Color(color.r, color.g, color.b, 1);
+			color.a = 1;
 		}
 		image.sprite = faces[key];
 		image.color = color;
-	}            
+		GUI.color = color;
+		Vector2 rLoc = new Vector2((rectTrans.position.x), sw(1) - rectTrans.position.y);
+		Vector2 rSize = (Vector2) rectTrans.sizeDelta;
+		for(int j = 0; j < current.CardCount(); j++) {
+			float x = (rLoc.x + rSize.x) + sw(m.barLocInfo[0]) + (j/26) * (sw(m.barSize.x + m.barLocInfo[0]));
+			if(i%2 == 1) {
+				x = rLoc.x - (1 + j/26) * (sw(m.barSize.x + m.barLocInfo[0]));
+			}
+			float y = rLoc.y + sw(m.barLocInfo[1]) - sw(m.barLocInfo[2] / 100 * j) + (j/26) * rSize.y;
+			float w = sw(m.barSize.x);
+			float h = sw(m.barSize.y);
+			GUI.DrawTexture(new Rect(x, y, w, h), staticRectTexture);
+		}
+	}   
+
+	//UI Player Text
+	static void TextLabel(int i) {
+		string text = "";
+		if(PlayerAt(i).isAlive())
+			text += " Cards: " + PlayerAt(i).CardCount();
+		Text t = (Text) PlayerAt(i).gameObject.GetComponentInChildren(typeof(Text));
+		t.text = text;
+	}
 
 	static void WeakFadeUpdate() {
 		if(weakFade >= m.inactiveFade) {
@@ -431,15 +468,6 @@ public class GameManager : MonoBehaviour {
 			weakFade += Time.deltaTime * m.weakFadeSpeed;
 		else
 			weakFade -= Time.deltaTime * m.weakFadeSpeed;
-	}
-
-	//UI Player Text
-	static void TextLabel(int i) {
-		string text = "";
-		if(PlayerAt(i).isAlive())
-			text += " Cards: " + PlayerAt(i).CardCount();
-		Text t = (Text) PlayerAt(i).gameObject.GetComponentInChildren(typeof(Text));
-		t.text = text;
 	}
 
 	//Returns if the Game is Over
@@ -466,4 +494,18 @@ public class GameManager : MonoBehaviour {
 	public static bool isRoyalCollecting() {
 		return royalCollecting;
 	}
+
+	static Rect GUIHelper(float x, float y, float w, float h) {
+		float s = Screen.width / 100;
+		return new Rect(x * s, y * s, w * s, h * s);
+	}
+
+	static float sw(float n) {
+		return n * Screen.width;
+	}
+
+	static Vector2 GUIHelper(float x, float y) {
+		return new Vector2(x * Screen.width, y * Screen.width);
+	}
+	
 }
