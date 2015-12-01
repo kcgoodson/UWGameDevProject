@@ -81,4 +81,8 @@ public class Player : MonoBehaviour {
 	public bool isAlive() {
 		return alive;
 	}
+
+	public void DumpDeck() {
+		cards = new Queue();
+	}
 }

@@ -63,15 +63,12 @@ public class GameManager : MonoBehaviour {
 	public static void BeginGame(string[] playerLabels) {
 		AudioManager.Stop();
 		m.LoadGame(playerLabels);
-
 	}
-
 
 	// Use this for initialization
 	public void LoadGame (string[] playerLabels) {
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
-
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Stack();
@@ -80,7 +77,8 @@ public class GameManager : MonoBehaviour {
 		SetupFaces();
 		SetupPlayers();
 		DealCards(deck);
-		startPos = transform.position;
+		if(startPos == Vector3.zero)
+			startPos = transform.position;
 		ClearRound();
 		currentPlayer = (int) Random.Range(0, playerNames.Length);
 		gameOver = false;
@@ -445,7 +443,7 @@ public class GameManager : MonoBehaviour {
 			color.a = 1;
 		}
 		image.sprite = faces[key];
-		image.color = color;
+		image.color = new Color(255, 255, 255, color.a);
 		GUI.color = color;
 		Vector2 rLoc = new Vector2((rectTrans.position.x), sw(1) - rectTrans.position.y);
 		Vector2 rSize = (Vector2) rectTrans.sizeDelta;
@@ -528,8 +526,14 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void RestartGame() {
+		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
+		foreach(GameObject o in allCards) {
+			Destroy(o);
+		}
+		ClearRound();
 		BeginGame(playerNames);
 		PauseMenu.HideScreens();
+
 	}
 	
 }
