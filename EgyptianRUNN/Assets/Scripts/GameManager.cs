@@ -62,7 +62,7 @@ public class GameManager : MonoBehaviour {
 		this.playerNames = playerLabels;
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
-		m = this;
+		m = gameObject.GetComponent<GameManager>();
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Stack();
