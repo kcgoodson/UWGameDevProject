@@ -45,8 +45,15 @@ public class Dummy : MonoBehaviour {
         } else if (GameObject.Find("4 Player Button").tag.Equals("Selected")) {
             names[3] = GameObject.FindGameObjectWithTag("Player4").name;
         }
-        //GameManager.LoadGame(names);
+		Application.LoadLevel(1);
+		d.StartCoroutine(GoToGame(names));
     }
+
+	IEnumerator GoToGame(string[] names){
+		while(Application.loadedLevel != 1)
+			yield return null;
+		GameManager.BeginGame(names);
+	}
 
     //
     public void Pause() {

@@ -12,26 +12,26 @@ public class PlayButton : MonoBehaviour {
     private GameObject Player3;
     private GameObject Player4;
     private GameObject Playbutton;
-
-    // Use this for initialization
-    void Start () {
-        PlayerButton2 = GameObject.Find("2 Player Button");
-        PlayerButton3 = GameObject.Find("3 Player Button");
-        PlayerButton4 = GameObject.Find("4 Player Button");
-        Player1 = GameObject.Find("Player 1");
-        Player2 = GameObject.Find("Player 2");
-        Player3 = GameObject.Find("Player 3");
-        Player4 = GameObject.Find("Player 4");
-        Playbutton = GameObject.Find("Play Button");
-        Player1.SetActive(false);
-        Player2.SetActive(false);
-        Player3.SetActive(false);
-        Player4.SetActive(false);
-        Playbutton.SetActive(false);
-    }
 	
 	// Update is called once per frame
 	void Update () {
+		if(Application.loadedLevel == 1)
+			return;
+		if(PlayerButton2 == null) {
+			PlayerButton2 = GameObject.Find("2 Player Button");
+			PlayerButton3 = GameObject.Find("3 Player Button");
+			PlayerButton4 = GameObject.Find("4 Player Button");
+			Player1 = GameObject.Find("Player 1");
+			Player2 = GameObject.Find("Player 2");
+			Player3 = GameObject.Find("Player 3");
+			Player4 = GameObject.Find("Player 4");
+			Playbutton = GameObject.Find("Play Button");
+			Player1.SetActive(false);
+			Player2.SetActive(false);
+			Player3.SetActive(false);
+			Player4.SetActive(false);
+			Playbutton.SetActive(false);
+		}
         if (Player1.tag.Equals("Selected") && Player2.tag.Equals("Selected")) {
             if (PlayerButton2.tag.Equals("Selected") || (Player3.tag.Equals("Selected") && 
                 (PlayerButton3.tag.Equals("Selected") || Player4.tag.Equals("Selected") && 

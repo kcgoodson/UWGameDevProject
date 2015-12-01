@@ -29,6 +29,10 @@ public class AudioManager : MonoBehaviour {
 		source.PlayOneShot(sfx[name]);
 	}
 
+	public static void Stop(){
+		source.Stop();
+	}
+
 	//Deal Sound (x4)?
 	//Collect Sound (x4)?
 	//Burn Sound (x4)?

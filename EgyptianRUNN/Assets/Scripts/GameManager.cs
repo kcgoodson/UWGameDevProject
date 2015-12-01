@@ -7,7 +7,7 @@ public class GameManager : MonoBehaviour {
 
 	public int suits; //Default 4
 	public int ranks; //Default 13
-	public string[] playerNames; //2 - 4
+	public static string[] playerNames; //2 - 4
 	public int royalRank; //Default 8
 	public GameObject card; //Card Object
 	public GameObject playerObject; //Player Objects
@@ -53,16 +53,25 @@ public class GameManager : MonoBehaviour {
 	public float[] barLocInfo;
 	static Texture2D staticRectTexture;
 
-	void Start() {
-		LoadGame(playerNames);
+	static bool gameNotStarted;
+
+	void Awake() {
+		m = this.gameObject.GetComponent<GameManager>();
+		gameNotStarted = true;
 	}
+
+	public static void BeginGame(string[] playerLabels) {
+		AudioManager.Stop();
+		m.LoadGame(playerLabels);
+
+	}
+
 
 	// Use this for initialization
 	public void LoadGame (string[] playerLabels) {
-		this.playerNames = playerLabels;
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
-		m = gameObject.GetComponent<GameManager>();
+
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Stack();
@@ -75,14 +84,19 @@ public class GameManager : MonoBehaviour {
 		ClearRound();
 		currentPlayer = (int) Random.Range(0, playerNames.Length);
 		gameOver = false;
+		gameNotStarted = false;
 	}
 
 	void OnGUI() {
+		if(gameNotStarted)
+			return;
 		GUI.skin.box = new GUIStyle();
 		LabelPlayers();
 	}
 
 	void Update() {
+		if(gameNotStarted)
+			return;
 		CheckEndGame();
 		transform.position = Vector3.Lerp(transform.position, targetPos, Time.deltaTime * 10);
 		WeakFadeUpdate();
@@ -514,7 +528,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	public void RestartGame() {
-		Application.LoadLevel(1);
+		BeginGame(playerNames);
+		PauseMenu.HideScreens();
 	}
 	
 }
