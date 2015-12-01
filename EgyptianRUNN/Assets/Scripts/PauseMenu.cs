@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class PauseMenu : MonoBehaviour {
     static GameObject PauseScreen;
@@ -17,6 +18,7 @@ public class PauseMenu : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		isPaused = PauseScreen.activeInHierarchy;
 	    if(Input.GetButtonDown("ESC")) {
 			isPaused = !isPaused;
            	PauseScreen.SetActive(isPaused);
@@ -31,6 +33,6 @@ public class PauseMenu : MonoBehaviour {
     // Displays the given string in the victory panel
     public static void End(string tx) {
         WinScreen.SetActive(true);
-        GameObject.Find("End Text").GetComponent<GUIText>().text = tx;
+        GameObject.Find("End Text").GetComponent<Text>().text = tx + " Wins!";
     }
 }

@@ -508,5 +508,13 @@ public class GameManager : MonoBehaviour {
 	static Vector2 GUIHelper(float x, float y) {
 		return new Vector2(x * Screen.width, y * Screen.width);
 	}
+
+	public void EndGame() {
+		Application.LoadLevel(0);
+	}
+
+	public void RestartGame() {
+		Application.LoadLevel(1);
+	}
 	
 }

@@ -16,6 +16,8 @@ public class Player : MonoBehaviour {
 	}
 	
 	void Update() {
+		if(PauseMenu.isPaused)
+			return;
 		if(GameManager.CurrentPlayerID() == id) {
 			if(!HasCards())
 				GameManager.NextPlayer();
