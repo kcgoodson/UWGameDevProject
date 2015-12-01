@@ -62,11 +62,7 @@ public class GameManager : MonoBehaviour {
 		this.playerNames = playerLabels;
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
-<<<<<<< HEAD
 		m = gameObject.GetComponent<GameManager>();
-=======
-		m = this;
->>>>>>> 6610e75bcb1d71755704a279adfbb08d28a00b99
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
 		burn = new Stack();
@@ -357,7 +353,7 @@ public class GameManager : MonoBehaviour {
 		currentPlayer = -1;
 		gameOver = true;
 		AudioManager.playSound("tie");
-		Debug.Log("Tie");
+		PauseMenu.End("Tie");
 	}
 
 	//Signals a Win for a Player
@@ -370,7 +366,7 @@ public class GameManager : MonoBehaviour {
 		gameOver = true;
 		yield return new WaitForSeconds(1);
 		AudioManager.playSound("win");
-		Debug.Log ("WINNER! : " + ID);
+		PauseMenu.End(PlayerAt(ID).Label());
 	}
 
 	//Returns true if at least on player has cards

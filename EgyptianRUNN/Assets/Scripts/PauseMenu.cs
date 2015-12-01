@@ -2,11 +2,13 @@
 using System.Collections;
 
 public class PauseMenu : MonoBehaviour {
-    GameObject PauseScreen;
-    GameObject WinScreen;
+    static GameObject PauseScreen;
+    static GameObject WinScreen;
+	public static bool isPaused;
 
 	// Use this for initialization
 	void Start () {
+		isPaused = false;
         PauseScreen = GameObject.Find("Pause Screen");
         WinScreen = GameObject.Find("Win Screen");
         PauseScreen.SetActive(false);
@@ -16,7 +18,8 @@ public class PauseMenu : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 	    if(Input.GetButtonDown("ESC")) {
-            PauseScreen.SetActive(true);
+			isPaused = !isPaused;
+           	PauseScreen.SetActive(isPaused);
         }
 	}
 
@@ -26,7 +29,7 @@ public class PauseMenu : MonoBehaviour {
     }
 
     // Displays the given string in the victory panel
-    public void End(string tx) {
+    public static void End(string tx) {
         WinScreen.SetActive(true);
         GameObject.Find("End Text").GetComponent<GUIText>().text = tx;
     }
