@@ -263,7 +263,7 @@ public class GameManager : MonoBehaviour {
 
 	//Instatiates the Card in the Scene
 	public static void CreateCard(Card next) {
-		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * .965f;
+		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * 2.5f;//.965f;
 		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * (height)), Quaternion.identity);
 		AudioManager.playSound("deal");
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
