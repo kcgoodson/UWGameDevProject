@@ -59,8 +59,12 @@ public class GameManager : MonoBehaviour {
 
 	// Use this for initialization
 	public void LoadGame (string[] playerLabels) {
+<<<<<<< HEAD
 		this.playerNames = playerLabels;
 		staticRectTexture = new Texture2D( 1, 1 );
+=======
+		playerNames = playerLabels;
+>>>>>>> b593cc8fb4ea7169d4decb81efc842a294585f05
 		m = this;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
