@@ -53,8 +53,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	// Use this for initialization
-	void LoadGame (string[] playerLabels) {
-		this.playerNames = playerLabels;
+	public void LoadGame (string[] playerLabels) {
+		playerNames = playerLabels;
 		m = this;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
 		tableau = new Queue();
