@@ -21,6 +21,8 @@ public class PauseMenu : MonoBehaviour {
 		isPaused = PauseScreen.activeInHierarchy;
 	    if(Input.GetButtonDown("ESC")) {
 			isPaused = !isPaused;
+			if(WinScreen.activeInHierarchy)
+				isPaused = false;
            	PauseScreen.SetActive(isPaused);
         }
 	}

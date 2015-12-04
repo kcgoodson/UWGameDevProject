@@ -62,6 +62,11 @@ public class GameManager : MonoBehaviour {
 		gameNotStarted = true;
 	}
 
+	void Start() {
+		if(m.testing)
+			BeginGame(new string[2] {"Glad", "Mad"});
+	}
+
 	public static void BeginGame(string[] playerLabels) {
 		AudioManager.Stop();
 		m.LoadGame(playerLabels);
@@ -69,6 +74,7 @@ public class GameManager : MonoBehaviour {
 
 	// Use this for initialization
 	public void LoadGame (string[] playerLabels) {
+		foreach(string 
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
@@ -178,6 +184,7 @@ public class GameManager : MonoBehaviour {
 		GameObject canvas = GameObject.FindGameObjectWithTag("Canvas");
 		foreach(GameObject p in players) {
 			p.transform.SetParent(canvas.transform);
+			p.transform.SetAsFirstSibling();
 		}
 
 	}
