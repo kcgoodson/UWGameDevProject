@@ -63,8 +63,8 @@ public class GameManager : MonoBehaviour {
 	}
 
 	void Start() {
-		if(m.testing)
-			BeginGame(new string[2] {"Glad", "Mad"});
+		if(m.testing && GameObject.Find ("Dummy") == null)
+			BeginGame(new string[4] {"Glad", "Mad", "Sad", "Rad"});
 	}
 
 	public static void BeginGame(string[] playerLabels) {
@@ -74,7 +74,8 @@ public class GameManager : MonoBehaviour {
 
 	// Use this for initialization
 	public void LoadGame (string[] playerLabels) {
-		foreach(string 
+		foreach(string s in playerLabels)
+			Debug.Log (s);
 		staticRectTexture = new Texture2D( 1, 1 );
 		playerNames = playerLabels;
 		Queue deck = Shuffle(InitialDeck(suits, ranks));
