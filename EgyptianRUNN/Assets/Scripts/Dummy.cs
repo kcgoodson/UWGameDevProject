@@ -42,7 +42,9 @@ public class Dummy : MonoBehaviour {
         names[1] = GameObject.FindGameObjectWithTag("Player2").name;
         if (playertag2.Equals("Selected")) {
             names[2] = GameObject.FindGameObjectWithTag("Player3").name;
-        } else if (GameObject.Find("4 Player Button").tag.Equals("Selected")) {
+        }
+		if (GameObject.Find("4 Player Button").tag.Equals("Selected")) {
+			names[2] = GameObject.FindGameObjectWithTag("Player3").name;
             names[3] = GameObject.FindGameObjectWithTag("Player4").name;
         }
 		Application.LoadLevel(1);
