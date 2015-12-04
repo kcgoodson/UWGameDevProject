@@ -33,12 +33,14 @@ public class PauseMenu : MonoBehaviour {
     }
 
     // Displays the given string in the victory panel
-    public static void End(string tx) {
-        WinScreen.SetActive(true);
-		string message = tx + " Wins!";
+    public static void End(string tx, Sprite s) {
+		string message = "Congratulations!";
 		if(tx == "Tie")
 			message = tx;
-        GameObject.Find("End Text").GetComponent<Text>().text = message;
+		GameObject.FindGameObjectWithTag("WinnerImage").GetComponent<Image>().sprite = s;
+		GameObject.Find("End Text").GetComponent<Text>().text = message;
+        WinScreen.SetActive(true);
+	
     }
 
 	public static void HideScreens() {

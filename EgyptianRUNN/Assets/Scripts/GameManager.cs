@@ -375,7 +375,7 @@ public class GameManager : MonoBehaviour {
 		currentPlayer = -1;
 		gameOver = true;
 		AudioManager.playSound("tie");
-		PauseMenu.End("Tie");
+		PauseMenu.End("Tie", null);
 	}
 
 	//Signals a Win for a Player
@@ -388,7 +388,8 @@ public class GameManager : MonoBehaviour {
 		gameOver = true;
 		yield return new WaitForSeconds(1);
 		AudioManager.playSound("win");
-		PauseMenu.End(PlayerAt(ID).Label());
+		string label = PlayerAt(ID).Label();
+		PauseMenu.End(label, faces[label]);
 	}
 
 	//Returns true if at least on player has cards
