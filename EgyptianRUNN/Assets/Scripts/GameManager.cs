@@ -5,6 +5,8 @@ using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour {
 
+	public bool testing;
+
 	public int suits; //Default 4
 	public int ranks; //Default 13
 	public static string[] playerNames; //2 - 4
@@ -263,7 +265,7 @@ public class GameManager : MonoBehaviour {
 
 	//Instatiates the Card in the Scene
 	public static void CreateCard(Card next) {
-		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * 2.5f;//.965f;
+		float height = m.card.GetComponent<BoxCollider2D>().transform.lossyScale.y * 2.6f;//.965f;
 		GameObject nextCard = (GameObject) Instantiate(m.card, new Vector2(m.card.transform.position.x, (tableau.Count - 1) * (height)), Quaternion.identity);
 		AudioManager.playSound("deal");
 		nextCard.GetComponent<SpriteRenderer>().sprite = CardSkin(next);
@@ -418,7 +420,6 @@ public class GameManager : MonoBehaviour {
 	static void LabelPlayers() {
 		for(int i = 0; i < players.Length; i++) {
 			ImageLabel(i);
-			//TextLabel(i);
 		}
 	}
 
@@ -431,9 +432,11 @@ public class GameManager : MonoBehaviour {
 		rectTrans.position = new Vector2((Screen.width - rectTrans.rect.width) * (i % 2), ((Screen.height - rectTrans.rect.height) * ((3 - i) / 2)));
 		string key = current.Label();
 		Color color = colors[key];
+		Color spriteColor = Color.white;
 		color.a = m.inactiveFade;
 		if(!current.isAlive()) {
 			color = colors["Dead"];
+			spriteColor = color;
 			color.a = 0.3f;
 		} else if(!current.HasCards()) {
 			//color = new Color(color.r, color.g, color.b, weakFade);
@@ -443,7 +446,8 @@ public class GameManager : MonoBehaviour {
 			color.a = 1;
 		}
 		image.sprite = faces[key];
-		image.color = new Color(255, 255, 255, color.a);
+		spriteColor.a = color.a;
+		image.color = spriteColor;
 		GUI.color = color;
 		Vector2 rLoc = new Vector2((rectTrans.position.x), sw(1) - rectTrans.position.y);
 		Vector2 rSize = (Vector2) rectTrans.sizeDelta;
@@ -527,8 +531,12 @@ public class GameManager : MonoBehaviour {
 
 	public void RestartGame() {
 		GameObject[] allCards = GameObject.FindGameObjectsWithTag("Card");
+		GameObject[] allPlayers = GameObject.FindGameObjectsWithTag("Player");
 		foreach(GameObject o in allCards) {
 			Destroy(o);
+		}
+		foreach(GameObject p in allPlayers) {
+			Destroy (p);
 		}
 		ClearRound();
 		BeginGame(playerNames);
